@@ -193,6 +193,7 @@ export default function ACTIVATION_MODAL(props: any) {
       MULTIPLIER: multiplier,
       EMPLOYEE_NAME: employee_list.filter((item: any)=>item.NAME === employee)[0].NAME,
       PRODUCT_NAME: product_list.filter((item: any)=>item.focus === true)[0].NAME,
+
     };
     http.sendActivation(request, (result: any) => {
     });

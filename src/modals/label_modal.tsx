@@ -69,6 +69,7 @@ export default function LABEL_MODAL(props: any) {
       QUANTITY: parseInt(quantity),
       MULTIPLIER: "1", 
       PRODUCT_NAME: selected_product.NAME,
+      EMPLOYEE_ID: "",
     }
     http.genBarcode(print_data, (result: any) => {
     Alert.alert("barcode printed")

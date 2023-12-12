@@ -1,4 +1,4 @@
-const base_url = 'http://localhost:3001';
+const base_url = 'http://192.168.1.176:3001';
 
 const get_employees = (callback: any) => {
   var myHeaders = new Headers();
@@ -121,6 +121,7 @@ const gen_barcode = (data: any, callback: any) => {
     NAME: "",
     PRODUCT_NAME: data.PRODUCT_NAME,
     MULTIPLIER: data.MULTIPLIER,
+    EMPLOYEE_ID: data.EMPLOYEE_ID,
   });
   var requestOptions = {
     method: 'POST',
@@ -155,6 +156,30 @@ const submitShipment = (data: any, callback: any) => {
     .catch(error => console.log('error', error));
 
 }
+
+const product_reduction = (data: any, callback: any) => {
+  const myHeaders = new Headers();
+  myHeaders.append('Content-Type', 'application/json');
+  var raw = JSON.stringify(data);
+  var requestOptions = {
+    method: 'POST',
+    headers: myHeaders,
+    body: raw,
+    redirect: 'follow',
+  };
+  fetch(`${base_url}/product_reduction`, requestOptions)
+    .then(response => response.json())
+    .then(result => {
+      return callback(result);
+    })
+    .catch(error => console.log('error', error));
+
+}
+
+
+
+
+
 
 class http_request {
   submit_shipment = (data: any, callback: any) => {
@@ -194,6 +219,11 @@ class http_request {
   }
   genBarcode = (data: any, callback: any) => {
     gen_barcode(data, (result: any) => {
+      return callback(result);
+    });
+  }
+  productRelease = (data: any, callback: any) => {
+    product_reduction(data, (result: any) => {
       return callback(result);
     });
   }

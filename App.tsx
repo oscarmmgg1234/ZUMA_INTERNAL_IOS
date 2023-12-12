@@ -28,11 +28,6 @@ import RELEASE_MODAL from './src/modals/release_modal';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LABEL_MODAL from './src/modals/label_modal';
 import Main_Shipment from './src/modals/main_shipment_modal';
-import {
-  Camera,
-  useCodeScanner,
-  useCameraDevice,
-} from 'react-native-vision-camera';
 
 type SectionProps = PropsWithChildren<{
   title: string;

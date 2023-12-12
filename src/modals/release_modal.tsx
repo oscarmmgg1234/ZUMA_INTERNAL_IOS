@@ -22,6 +22,7 @@ import ErrorAlert from '../alerts/Error_Alert';
 const http = http_req();
 
 export default function RELEASE_MODAL(props: any) {
+
   const [error, setError] = React.useState(false);
   const errorData = React.useRef<any>({});
 
@@ -122,7 +123,14 @@ export default function RELEASE_MODAL(props: any) {
   const [prod_button_focused, set_prod_button_focused] = React.useState(false);
   const [keyboardOffset, setKeyboardOffset] = React.useState(0);
   const [camera, setCamera] = React.useState(false);
+
   const [code, setCode] = React.useState('');
+
+  const submitRelease = () => {
+    http.productRelease({barcode: code}, (result: any) => {});
+  }
+
+
   const button_focused = (button: string) => {
     if (button === 'emp') {
       set_emp_button_focused(true);
@@ -155,8 +163,8 @@ export default function RELEASE_MODAL(props: any) {
   const codeScanner = useCodeScanner({
     codeTypes: ['qr'],
     onCodeScanned: codes => {
-      props.setBarcode(codes[0].value);
-      props.setCameraState(false);
+      setCode(codes[0].value);
+      setCamera(false);
     },
   });
   const device = useCameraDevice('back');
@@ -298,6 +306,7 @@ export default function RELEASE_MODAL(props: any) {
           <TouchableOpacity
             onPressIn={onPressIn}
             onPressOut={onPressOut}
+            onPress={() => {submitRelease(); props.set_visible(false);}}
             style={{
               width: '100%',
               height: '100%',
