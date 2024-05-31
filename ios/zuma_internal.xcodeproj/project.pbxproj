@@ -12,7 +12,7 @@
 		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
-		48593E952AE8DDF600E82B00 /* RNAirPrinterModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 48593E942AE8DDF600E82B00 /* RNAirPrinterModule.m */; };
+		484E2DFB2B9C3B4300D6D68E /* BarcodePrinterModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 484E2DFA2B9C3B4300D6D68E /* BarcodePrinterModule.m */; };
 		48B2A3A62AD4E4B600F14D10 /* Fontisto.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 48B2A3932AD4E4B600F14D10 /* Fontisto.ttf */; };
 		48B2A3A72AD4E4B600F14D10 /* Octicons.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 48B2A3942AD4E4B600F14D10 /* Octicons.ttf */; };
 		48B2A3A82AD4E4B600F14D10 /* Feather.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 48B2A3952AD4E4B600F14D10 /* Feather.ttf */; };
@@ -58,8 +58,8 @@
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = zuma_internal/main.m; sourceTree = "<group>"; };
 		19F6CBCC0A4E27FBF8BF4A61 /* libPods-zuma_internal-zuma_internalTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-zuma_internal-zuma_internalTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B4392A12AC88292D35C810B /* Pods-zuma_internal.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-zuma_internal.debug.xcconfig"; path = "Target Support Files/Pods-zuma_internal/Pods-zuma_internal.debug.xcconfig"; sourceTree = "<group>"; };
-		48593E932AE8DDF600E82B00 /* RNAirPrinterModule.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RNAirPrinterModule.h; sourceTree = "<group>"; };
-		48593E942AE8DDF600E82B00 /* RNAirPrinterModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RNAirPrinterModule.m; sourceTree = "<group>"; };
+		484E2DFA2B9C3B4300D6D68E /* BarcodePrinterModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BarcodePrinterModule.m; sourceTree = "<group>"; };
+		484E2DFC2B9C3B5700D6D68E /* BarcodePrinterModule.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BarcodePrinterModule.h; sourceTree = "<group>"; };
 		48B2A3932AD4E4B600F14D10 /* Fontisto.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Fontisto.ttf; sourceTree = "<group>"; };
 		48B2A3942AD4E4B600F14D10 /* Octicons.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Octicons.ttf; sourceTree = "<group>"; };
 		48B2A3952AD4E4B600F14D10 /* Feather.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Feather.ttf; sourceTree = "<group>"; };
@@ -134,8 +134,8 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB71A68108700A75B9A /* main.m */,
-				48593E932AE8DDF600E82B00 /* RNAirPrinterModule.h */,
-				48593E942AE8DDF600E82B00 /* RNAirPrinterModule.m */,
+				484E2DFC2B9C3B5700D6D68E /* BarcodePrinterModule.h */,
+				484E2DFA2B9C3B4300D6D68E /* BarcodePrinterModule.m */,
 			);
 			name = zuma_internal;
 			sourceTree = "<group>";
@@ -278,7 +278,7 @@
 						TestTargetID = 13B07F861A680F5B00A75B9A;
 					};
 					13B07F861A680F5B00A75B9A = {
-						LastSwiftMigration = 1120;
+						LastSwiftMigration = 1500;
 					};
 				};
 			};
@@ -503,8 +503,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
-				48593E952AE8DDF600E82B00 /* RNAirPrinterModule.m in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
+				484E2DFB2B9C3B4300D6D68E /* BarcodePrinterModule.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -579,6 +579,10 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = LJJPXXS8KT;
 				ENABLE_BITCODE = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Pods/hermes-engine/destroot/Library/Frameworks/macosx",
+				);
 				INFOPLIST_FILE = zuma_internal/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ZINTERNAL;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -595,6 +599,8 @@
 				PRODUCT_NAME = zuma_internal;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "zuma_internal-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 2;
@@ -610,6 +616,10 @@
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = LJJPXXS8KT;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Pods/hermes-engine/destroot/Library/Frameworks/macosx",
+				);
 				INFOPLIST_FILE = zuma_internal/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ZINTERNAL;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -626,6 +636,8 @@
 				PRODUCT_NAME = zuma_internal;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "zuma_internal-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 2;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -663,6 +675,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
+				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = i386;
@@ -671,7 +684,7 @@
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
+					"DEBUG=0",
 					"$(inherited)",
 					_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION,
 				);
@@ -692,8 +705,8 @@
 					"\"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)\"",
 					"\"$(inherited)\"",
 				);
-				MTL_ENABLE_DEBUG_INFO = YES;
-				ONLY_ACTIVE_ARCH = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
@@ -703,6 +716,10 @@
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
+					"-Wl",
+					"-ld_classic",
+					"-Wl",
+					"-ld_classic",
 					"-Wl",
 					"-ld_classic",
 					"-Wl",
@@ -755,7 +772,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = YES;
-				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_NS_ASSERTIONS = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = i386;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -780,7 +797,8 @@
 					"\"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)\"",
 					"\"$(inherited)\"",
 				);
-				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
@@ -790,6 +808,10 @@
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
+					"-Wl",
+					"-ld_classic",
+					"-Wl",
+					"-ld_classic",
 					"-Wl",
 					"-ld_classic",
 					"-Wl",

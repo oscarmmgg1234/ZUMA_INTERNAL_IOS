@@ -14,12 +14,16 @@ import {
 
 const ShipmentDisplay = React.memo((props: any) => {
   // Define how each item in the list should be rendered
-  const renderItem = ({item}) => (
-    <View style={styles.row}>
-      <Text style={styles.cell}>{item.PRODUCT_NAME}</Text>
-      <Text style={styles.cell}>{item.EMPLOYEE_ID}</Text>
+  const renderItem = ({item, index}) => (
+    <View style={index % 2 == 0 ? styles.row : styles.rowAlt}>
+      <View style={{flex: 1, borderRadius: 40, backgroundColor: '#FF5733'}}>
+        <Text style={{textAlign: 'center'}}>{item.PRODUCT_NAME}</Text>
+      </View>
+      <Text style={styles.cell}>{item.EMPLOYEE_NAME}</Text>
       <Text style={styles.cell}>{item.QUANTITY}</Text>
-      <Text style={styles.cell}>{new Date(item.DATE).toLocaleString()}</Text>
+      <Text style={styles.cell}>
+        {new Date(item.SHIPMENT_DATE).toLocaleString()}
+      </Text>
     </View>
   );
 
@@ -28,11 +32,12 @@ const ShipmentDisplay = React.memo((props: any) => {
     <FlatList
       data={props.log.data}
       renderItem={renderItem}
-      keyExtractor={item => item.SHIPMENT_ID}
+      style={{marginBottom: 30}}
+      keyExtractor={item => Math.random().toString()}
       ListHeaderComponent={() => (
         <View style={styles.header}>
           <Text style={styles.headerCell}>Product Name</Text>
-          <Text style={styles.headerCell}>Employee ID</Text>
+          <Text style={styles.headerCell}>Employee</Text>
           <Text style={styles.headerCell}>Quantity</Text>
           <Text style={styles.headerCell}>Shipment Date</Text>
         </View>
@@ -56,7 +61,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#CFEDEE',
     padding: 10,
     borderTopWidth: 1,
     borderBottomWidth: 1,
@@ -67,6 +72,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  rowAlt: {
+    flexDirection: 'row',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
   },
 });
 

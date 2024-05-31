@@ -12,16 +12,28 @@ import {
   KeyboardEvent,
   Animated,
   Alert,
+  NativeModules,
 } from 'react-native';
+import Slider from '@react-native-community/slider';
 import MODAL_BASE from '../modal_component';
 import {http_req} from '../http/req';
 import ErrorAlert from '../alerts/Error_Alert';
+import CustomLoader from '../Components/LoadingIndicators/loading';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+
+const {BarcodePrinterModule} = NativeModules;
+
+// BarcodePrinterModule.printBarcodes(barcodeBuffers, response => {
+//   console.log(response); // "Printing started successfully." or any error message
+// });
 
 const http = http_req();
 
 export default function ACTIVATION_MODAL(props: any) {
   const [error, setError] = React.useState(false);
   const errorData = React.useRef<any>({});
+  const [loading, setLoading] = React.useState(false);
+  const [loadingText, setLoadingText] = React.useState('');
 
   React.useEffect(() => {
     if (props.refresh == true) {
@@ -75,7 +87,7 @@ export default function ACTIVATION_MODAL(props: any) {
 
   React.useEffect(() => {
     const keyboardWillShow = (event: KeyboardEvent) => {
-      setKeyboardOffset(event.endCoordinates.height);
+      setKeyboardOffset(event.endCoordinates.height - 175);
     };
 
     const keyboardWillHide = () => {
@@ -92,8 +104,8 @@ export default function ACTIVATION_MODAL(props: any) {
   }, []);
 
   const [type, set_type] = React.useState(true);
-  const [amount, set_amount] = React.useState({fixed: true, amount: 0});
-  const [multiplier, set_multiplier] = React.useState('1');
+  const [amount, set_amount] = React.useState(70); // Updated to default to 1
+  const [multiplier, set_multiplier] = React.useState(1); // Updated to default to 1
 
   const [step, set_step] = React.useState(false);
   const [employee, setEmployee] = React.useState('');
@@ -102,8 +114,30 @@ export default function ACTIVATION_MODAL(props: any) {
     {EMPLOYEE_ID: string; NAME: string; focus: boolean}[]
   >([]);
   const [product_list, set_product_list] = React.useState<
-    {PRODUCT_ID: string; focus: boolean; NAME: string}[]
+    {
+      PRODUCT_ID: string;
+      focus: boolean;
+      NAME: string;
+      ACTIVATION_TOKEN: string;
+    }[]
   >([]);
+
+  const [filteredData, setFilteredData] = React.useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = React.useState<string>('');
+
+  React.useEffect(() => {
+    setFilteredData(product_list);
+  }, [product_list]);
+
+  React.useEffect(() => {
+    if (searchQuery === '') return setFilteredData(product_list);
+    else {
+      const newData = product_list.filter(item =>
+        item.NAME.toLowerCase().includes(searchQuery.toLowerCase()),
+      );
+      setFilteredData(newData);
+    }
+  }, [searchQuery]);
 
   const init = () => {
     http.getEmployees((result: any) => {
@@ -152,23 +186,32 @@ export default function ACTIVATION_MODAL(props: any) {
   }, [type]);
 
   const onFocus_Product = (product: any) => {
-    const newRes: {PRODUCT_ID: string; focus: boolean; NAME: string}[] =
-      product_list.map(
-        (item: {PRODUCT_ID: string; focus: boolean; NAME: string}) => {
-          if (item.PRODUCT_ID === product) {
-            if (item.focus === true) {
-              set_step(false);
-              return {...item, focus: false};
-            } else {
-              set_step(true);
-              return {...item, focus: true};
-            }
-          } else {
+    const newRes: {
+      PRODUCT_ID: string;
+      focus: boolean;
+      NAME: string;
+      ACTIVATION_TOKEN: string;
+    }[] = filteredData.map(
+      (item: {
+        PRODUCT_ID: string;
+        focus: boolean;
+        NAME: string;
+        ACTIVATION_TOKEN: string;
+      }) => {
+        if (item.PRODUCT_ID === product) {
+          if (item.focus === true) {
+            set_step(false);
             return {...item, focus: false};
+          } else {
+            set_step(true);
+            return {...item, focus: true};
           }
-        },
-      );
-    set_product_list(newRes);
+        } else {
+          return {...item, focus: false};
+        }
+      },
+    );
+    setFilteredData(newRes);
   };
   const onFocus_Employee = (employee: any) => {
     const newRes = employee_list.map(item => {
@@ -189,37 +232,84 @@ export default function ACTIVATION_MODAL(props: any) {
   };
 
   const activate = () => {
-    const request = {
-      EMPLOYEE_ID: employee_list.filter(
-        (item: any) => item.NAME === employee,
-      )[0].EMPLOYEE_ID,
-      PRODUCT_ID: product_list.filter((item: any) => item.focus === true)[0]
-        .PRODUCT_ID,
-      fixed: amount.fixed,
-      QUANTITY: amount.amount,
-      MULTIPLIER: multiplier,
-      EMPLOYEE_NAME: employee_list.filter(
-        (item: any) => item.NAME === employee,
-      )[0].NAME,
-      PRODUCT_NAME: product_list.filter((item: any) => item.focus === true)[0]
-        .NAME,
-    };
+    const employee = employee_list.find((item: any) => item.focus);
+    const employee_id = employee?.EMPLOYEE_ID;
+    const product = filteredData.find((item: any) => item.focus);
 
-    http.sendActivation(request, (result: any) => {});
-    Alert.alert('Success', 'Activation Sent');
+    // Check for undefined or null values and validate amount and multiplier
+    if (
+      !employee_id ||
+      !product ||
+      amount <= 0 ||
+      isNaN(Number(multiplier)) ||
+      Number(multiplier) <= 0
+    ) {
+      Alert.alert('Error', 'Please fill all fields');
+      return;
+    }
+
+    // Construct the request object using the found employee and product details
+    const request = {
+      EMPLOYEE_ID: employee_id,
+      PRODUCT_ID: product.PRODUCT_ID,
+      QUANTITY: amount,
+      MULTIPLIER: multiplier,
+      EMPLOYEE_NAME: employee.NAME,
+      PRODUCT_NAME: product.NAME,
+      SRC: 'Activation',
+      PROCESS_TOKEN: product.ACTIVATION_TOKEN,
+      PROCESS: 'activation',
+    };
+    setLoading(true);
+    setLoadingText('Activating product and awaiting printing barcode...');
+    // Send the activation request
+    http.sendActivation(request, (result: any) => {
+      setLoading(false);
+
+      BarcodePrinterModule.printBarcodes(
+        result.data.barcodeBuffer,
+        response => {
+          if (response == 0) {
+            Alert.alert('Success', 'Activation Sent and Printing Barcode...');
+
+            // Reset the form fields and any other necessary states
+            setEmployee('');
+            setSearchQuery('');
+            set_amount(1); // Reset to default value
+            set_multiplier(1); // Reset to default value
+            props.modal_completion(false);
+
+            // Re-initialize or refresh any necessary data
+            init();
+          } else if (response == 1) {
+            Alert.alert('Error', 'Barcode Printing cancelled');
+          } else if (response == 2) {
+            Alert.alert('Error', 'Barcode Printing failed');
+          }
+        },
+      );
+      // Callback logic after sending the activation request
+    });
+
+    // Show success alert
   };
 
-  type ItemProps = {NAME: string; PRODUCT_ID: string; focus: boolean};
+  type ItemProps = {
+    NAME: string;
+    PRODUCT_ID: string;
+    focus: boolean;
+    PROCESS_TOKEN: string;
+  };
 
-  const Entry = (item: ItemProps) => (
+  const Entry = (item: ItemProps, index: any) => (
     <TouchableOpacity
       onPress={() => {
         onFocus_Product(item.PRODUCT_ID);
       }}>
       <View
         style={{
-          backgroundColor: '#CFEDEE',
-          height: 100,
+          backgroundColor: index % 2 == 0 ? '#AFCCA9' : '#9CBFA9',
+          height: item.focus ? 150 : 100,
           width: '100%',
           flexDirection: 'row',
           justifyContent: 'space-around',
@@ -244,7 +334,7 @@ export default function ACTIVATION_MODAL(props: any) {
           style={{
             width: 100,
             height: '40%',
-            backgroundColor: '#05F26C',
+            backgroundColor: 'orange',
             alignItems: 'center',
             justifyContent: 'center',
             borderRadius: 50,
@@ -255,14 +345,14 @@ export default function ACTIVATION_MODAL(props: any) {
     </TouchableOpacity>
   );
 
-  const employee_entry = (item: any) => (
+  const employee_entry = (item: any, index: any) => (
     <TouchableOpacity
       onPress={() => {
         onFocus_Employee(item);
       }}>
       <View
         style={{
-          backgroundColor: '#CFEDEE',
+          backgroundColor: index % 2 == 0 ? '#CFEDEE' : '#66A3A4',
           height: 60,
           width: '100%',
           flexDirection: 'row',
@@ -297,6 +387,7 @@ export default function ACTIVATION_MODAL(props: any) {
     });
     set_product_list(newRes2);
     set_type(true);
+    setEmployee('');
   };
 
   return (
@@ -379,7 +470,7 @@ export default function ACTIVATION_MODAL(props: any) {
                   }}>
                   <FlatList
                     data={employee_list}
-                    renderItem={({item}) => employee_entry(item)}
+                    renderItem={({item, index}) => employee_entry(item, index)}
                     keyExtractor={item => item.NAME}
                   />
                 </View>
@@ -419,17 +510,17 @@ export default function ACTIVATION_MODAL(props: any) {
                 width: '60%',
                 height: '90%',
                 borderRadius: 50,
-                backgroundColor: '#AFCCA9',
-                borderColor: '#60BF89',
-                borderWidth: 1,
+                backgroundColor: '#CFEDEE',
+                borderColor: '#AFCCA9',
+                borderWidth: 4,
                 borderStyle: 'solid',
                 shadowColor: '#000',
                 shadowOffset: {
                   width: 0,
                   height: 2,
                 },
-                shadowOpacity: 0.25,
-                shadowRadius: 3.84,
+                shadowOpacity: 0.6,
+                shadowRadius: 5,
               }}>
               <View
                 style={{
@@ -460,9 +551,49 @@ export default function ACTIVATION_MODAL(props: any) {
                   paddingVertical: 20,
                   paddingHorizontal: 10,
                 }}>
+                <View
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    backgroundColor: 'rgba(0,0,0,0.2)',
+                    alignItems: 'center',
+                    borderRadius: 20,
+                    marginHorizontal: 10,
+                    paddingHorizontal: 10,
+                    height: 40,
+                    marginBottom: 7,
+                    borderStyle: 'solid',
+                    borderWidth: 1,
+                    borderColor: 'rgba(0,0,0,0.2)',
+                    shadowColor: '#000',
+                    shadowOffset: {
+                      width: 0,
+                      height: 2,
+                    },
+                    shadowOpacity: 0.5,
+                    shadowRadius: 6,
+                  }}>
+                  <Ionicons name={'search-outline'} size={15} color={'white'} />
+                  <TextInput
+                    placeholderTextColor={'white'}
+                    value={searchQuery}
+                    placeholder="Search..."
+                    onChangeText={text => setSearchQuery(text)}
+                    style={{
+                      width: '91%',
+                      paddingHorizontal: 10,
+                      height: '85%',
+                      backgroundColor: 'rgba(0,0,0,0.1)',
+                      marginLeft: 5,
+                      fontSize: 20,
+                      color: 'white',
+                      borderRadius: 10,
+                    }}
+                  />
+                </View>
                 <FlatList
-                  data={product_list}
-                  renderItem={({item}) => Entry(item)}
+                  data={filteredData}
+                  renderItem={({item, index}) => Entry(item, index)}
                   keyExtractor={item => item.PRODUCT_ID}
                 />
               </View>
@@ -482,36 +613,19 @@ export default function ACTIVATION_MODAL(props: any) {
                 justifyContent: 'space-around',
                 alignItems: 'center',
               }}>
-              <TouchableOpacity
-                style={styles.activation_modal_amount}
-                onPress={() => set_amount({...amount, fixed: !amount.fixed})}>
-                <Text style={styles.content_button_text}>
-                  {amount.fixed ? 'Amount: Fixed' : 'Amount: Custom'}
-                </Text>
-              </TouchableOpacity>
-              {amount.fixed ? null : (
-                <TextInput
-                  placeholder="Enter Amount"
-                  inputMode="numeric"
-                  value={amount.amount.toString()}
-                  onChangeText={text => {
-                    if (text === '') return set_amount({...amount, amount: 0});
-                    else {
-                      set_amount({...amount, amount: parseInt(text)});
-                    }
-                  }}
-                  keyboardType="numeric"
-                  style={{
-                    width: '30%',
-                    height: '60%',
-                    color: 'black',
-                    fontSize: 20,
-                    backgroundColor: '#AFCCA9',
-                    borderRadius: 50,
-                    paddingHorizontal: 10,
-                  }}
-                />
-              )}
+              <Text style={styles.sliderLabel}>Amount: {amount}</Text>
+              <Slider
+                style={styles.slider}
+                minimumValue={1}
+                maximumValue={110}
+                tapToSeek={true}
+                step={1}
+                value={amount}
+                onValueChange={value => set_amount(value)}
+                minimumTrackTintColor="#89BE63"
+                maximumTrackTintColor="silver"
+                thumbTintColor="#89BE63"
+              />
             </View>
           </View>
 
@@ -528,35 +642,19 @@ export default function ACTIVATION_MODAL(props: any) {
                 justifyContent: 'space-around',
                 alignItems: 'center',
               }}>
-              <View
-                style={[
-                  styles.activation_modal_amount,
-                  {backgroundColor: '#89BE63'},
-                ]}>
-                <Text style={styles.content_button_text}>Quantity:</Text>
-              </View>
-
-              <TextInput
-                placeholder="Enter Multiplier"
-                inputMode="numeric"
-                editable={amount.fixed}
-                onBlur={() => {
-                  set_multiplier('1');
-                }}
-                value={multiplier.toString()}
-                onChangeText={text => {
-                  set_multiplier(text);
-                }}
-                keyboardType="numeric"
-                style={{
-                  width: '30%',
-                  height: '60%',
-                  color: 'black',
-                  fontSize: 20,
-                  backgroundColor: '#AFCCA9',
-                  borderRadius: 50,
-                  paddingHorizontal: 10,
-                }}
+              <Text style={styles.sliderLabel}>Cases: {multiplier}</Text>
+              <Slider
+                style={styles.slider}
+                minimumValue={1}
+                maximumValue={30}
+                
+                tapToSeek={true}
+                step={1}
+                value={multiplier}
+                onValueChange={value => set_multiplier(value)}
+                minimumTrackTintColor="#89BE63"
+                maximumTrackTintColor="silver"
+                thumbTintColor="#89BE63"
               />
             </View>
           </View>
@@ -594,7 +692,6 @@ export default function ACTIVATION_MODAL(props: any) {
                     style={styles.touchableArea}
                     onPress={() => {
                       activate();
-                      props.modal_completion(false);
                     }}>
                     <Text style={styles.activation_button_text}>Activate</Text>
                   </TouchableOpacity>
@@ -603,6 +700,7 @@ export default function ACTIVATION_MODAL(props: any) {
             </>
           )}
         </View>
+        <CustomLoader isLoading={loading} message={loadingText} />
       </MODAL_BASE>
     </>
   );
@@ -679,5 +777,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: 'black',
     fontWeight: 'bold',
+  },
+  sliderLabel: {
+    color: 'black',
+    fontSize: 30,
+  },
+  slider: {
+    width: '70%',
+    height: 40,
   },
 });

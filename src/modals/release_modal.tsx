@@ -9,6 +9,7 @@ import {
   TextInput,
   Animated,
   FlatList,
+  Alert,
 } from 'react-native';
 import MODAL_BASE from '../modal_component';
 import {
@@ -39,7 +40,7 @@ export default function RELEASE_MODAL(props: any) {
       setError(false);
     }
   }, [error]);
-  const [employee, setEmployee] = React.useState<any>({});
+  const [employee, setEmployee] = React.useState<any>(null);
 
   const [employee_list, set_employee_list] = React.useState<
     {EMPLOYEE_ID: string; NAME: string; focus: boolean}[]
@@ -80,20 +81,20 @@ export default function RELEASE_MODAL(props: any) {
     set_employee_list(newRes);
   };
 
-  const employee_entry = (items: any) => {
+  const employee_entry = (items: any, index: any) => {
     return (
       <TouchableOpacity
         onPress={() => onFocus_Employee(items)}
         style={{
           width: 300,
           height: 50,
-          backgroundColor: '#89BE63',
+          backgroundColor: index % 2 == 0 ? '#CFEDEE' : '#66A3A4',
           marginVertical: 5,
           alignSelf: 'center',
           borderRadius: 50,
           alignItems: 'center',
           justifyContent: 'center',
-          borderWidth: 3,
+          borderWidth: items.focus ? 6 : 2,
           borderColor: items.focus ? 'coral' : '#89BE63',
           shadowColor: '#000',
           shadowOffset: {
@@ -103,7 +104,7 @@ export default function RELEASE_MODAL(props: any) {
           shadowOpacity: 0.25,
           shadowRadius: 3.84,
         }}>
-        <Text style={{color: '#ECF9F2'}}>{items.NAME}</Text>
+        <Text style={{color: 'black'}}>{items.NAME}</Text>
       </TouchableOpacity>
     );
   };
@@ -132,11 +133,43 @@ export default function RELEASE_MODAL(props: any) {
   const [camera, setCamera] = React.useState(false);
 
   const [code, setCode] = React.useState('');
+  const [product, setProduct] = React.useState<any>(null);
 
-  const submitRelease = () => {
-    http.productRelease({barcode: code, employee: employee.EMPLOYEE_ID}, (result: any) => {});
+  const submitRelease = async () => {
+    if (employee != null) {
+      const response = await http.productRelease({
+        barcode: code,
+        employee: employee.EMPLOYEE_ID,
+      });
+      if (response.data.status === true) {
+        props.set_visible(false);
+        Alert.alert('Product Released');
+      } else {
+        Alert.alert('Product already reduced');
+      }
+      setCode('');
+      reset_all();
+    } else {
+      Alert.alert('Please select an employee');
+    }
   };
 
+  React.useEffect(() => {
+    if (code === '') return;
+    http.getProductNameFromTrans(
+      {barcode: code, employee: '000002'},
+      (result: any) => {
+        if (result.error) {
+          setError(true);
+          setErrorData(result);
+          return;
+        } else {
+          console.log(result);
+          setProduct(result);
+        }
+      },
+    );
+  }, [code]);
   const button_focused = (button: string) => {
     if (button === 'emp') {
       set_emp_button_focused(true);
@@ -182,6 +215,7 @@ export default function RELEASE_MODAL(props: any) {
     set_employee_list(newRes);
     setCode('');
     setCamera(false);
+    setEmployee(null);
   };
 
   return (
@@ -192,13 +226,52 @@ export default function RELEASE_MODAL(props: any) {
       keyboardOffset={keyboardOffset}
       reset={reset_all}>
       <View style={styles.main_view_base}>
+        <TouchableOpacity
+          style={styles.button_view}
+          onPress={() => {
+            setCamera(!camera);
+            setCode('');
+          }}>
+          <View style={styles.button_content}>
+            <Text style={{color: 'white', fontSize: 20, marginBottom: '5%'}}>
+              Press to toggle Product Scanner
+            </Text>
+            {camera ? (
+              <Camera
+                {...props}
+                style={StyleSheet.absoluteFill}
+                codeScanner={codeScanner}
+                device={device}
+                isActive={camera}
+              />
+            ) : null}
+            {code ? (
+              <View
+                style={{
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 'auto',
+                  paddingHorizontal: 30,
+                  height: 80,
+                  backgroundColor: 'rgba(0,0,0,0.3)',
+                  borderRadius: 20,
+                }}>
+                {product && <Text style={{color: 'white', fontSize: 35, fontWeight: 'bold'}}>{product.data.PRODUCT}</Text>}
+                <Text style={{color: 'black', fontSize: 16}}>
+                  Barcode Data:{' '}
+                </Text>
+                <Text style={{color: 'white', fontSize: 15}}>{code}</Text>
+              </View>
+            ) : null}
+          </View>
+        </TouchableOpacity>
         <View
           style={{
             width: '50%',
             height: '30%',
             borderRadius: 50,
             backgroundColor: '#AFCCA9',
-            borderColor: '#89BE63',
+            borderColor: '#CFEDEE',
             borderWidth: 1,
             borderStyle: 'solid',
             shadowColor: '#000',
@@ -206,7 +279,7 @@ export default function RELEASE_MODAL(props: any) {
               width: 0,
               height: 2,
             },
-            shadowOpacity: 0.25,
+            shadowOpacity: 0.6,
             shadowRadius: 3.84,
           }}>
           <View
@@ -241,46 +314,12 @@ export default function RELEASE_MODAL(props: any) {
             }}>
             <FlatList
               data={employee_list}
-              renderItem={({item}) => employee_entry(item)}
+              renderItem={({item, index}) => employee_entry(item, index)}
               keyExtractor={item => item.NAME}
             />
           </View>
         </View>
-        <TouchableOpacity
-          style={styles.button_view}
-          onPress={() => {
-            setCamera(!camera);
-            setCode('');
-          }}>
-          <View style={styles.button_content}>
-            <Text style={{color: 'white', fontSize: 20, marginBottom: '5%'}}>
-              Product
-            </Text>
-            {camera ? (
-              <Camera
-                {...props}
-                style={StyleSheet.absoluteFill}
-                codeScanner={codeScanner}
-                device={device}
-                isActive={camera}
-              />
-            ) : null}
-            {code ? (
-              <View
-                style={{
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 'auto',
-                  paddingHorizontal: 30,
-                  height: 40,
-                  backgroundColor: 'rgba(0,0,0,0.3)',
-                  borderRadius: 20,
-                }}>
-                <Text style={{color: 'white', fontSize: 15}}>{code}</Text>
-              </View>
-            ) : null}
-          </View>
-        </TouchableOpacity>
+
         <Animated.View
           style={[
             {
@@ -314,7 +353,6 @@ export default function RELEASE_MODAL(props: any) {
             onPressOut={onPressOut}
             onPress={() => {
               submitRelease();
-              props.set_visible(false);
             }}
             style={{
               width: '100%',
@@ -340,15 +378,18 @@ const styles = StyleSheet.create({
   },
   button_view: {
     width: '85%',
-    height: '30%',
-    backgroundColor: '#89BE63',
+    height: '40%',
+    backgroundColor: 'orange',
+    borderStyle: 'solid',
+    borderWidth: 4,
+    borderColor: '#CFEDEE',
     borderRadius: 100,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.7,
     shadowRadius: 3.84,
   },
   button_content: {

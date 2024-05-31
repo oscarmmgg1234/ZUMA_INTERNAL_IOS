@@ -1,5 +1,73 @@
-const base_url = 'http://localhost:3001';
-// 'http://192.168.1.176:3001';
+const base_url = 'http://192.168.1.176:3001';
+//192.168.1.176
+
+const getProductInventory = async (callback: any) => {
+  var myHeaders = new Headers();
+  myHeaders.append('Content-Type', 'application/json');
+  var requestOptions = {
+    method: 'POST',
+    headers: myHeaders,
+    redirect: 'follow',
+    cache: 'no-cache',
+    body: JSON.stringify({Mobile: true}),
+  };
+  fetch(`${base_url}/getInventory`, requestOptions)
+    .then(response => response.json())
+    .then(result => {
+      return callback(result);
+    })
+    .catch(error => console.log('error', error));
+};
+
+const getProductNameFromTrans = async (data: any, callback: Function) => {
+  var myHeaders = new Headers();
+  myHeaders.append('Content-Type', 'application/json');
+
+  var raw = JSON.stringify(data);
+  var requestOptions = {
+    method: 'POST',
+    headers: myHeaders,
+    body: raw,
+    redirect: 'follow',
+  };
+  fetch(`${base_url}/getProductNameFromTrans`, requestOptions)
+    .then(response => response.json())
+    .then(result => {
+      return callback(result);
+    })
+    .catch(error => console.log('error', error));
+};
+
+const revertTransaction = async (data: any) => {
+  var myHeaders = new Headers();
+  myHeaders.append('Content-Type', 'application/json');
+  var raw = JSON.stringify(data);
+  var requestOptions = {
+    method: 'POST',
+    headers: myHeaders,
+
+    body: raw,
+    redirect: 'follow',
+  };
+  await fetch(`${base_url}/revertTransaction`, requestOptions);
+};
+
+const getTransaction = (callback: any) => {
+  var myHeaders = new Headers();
+  myHeaders.append('Content-Type', 'application/json');
+  var requestOptions = {
+    method: 'POST',
+    headers: myHeaders,
+    redirect: 'follow',
+  };
+  fetch(`${base_url}/getTransactionLog`, requestOptions)
+    .then(response => response.json())
+    .then(result => {
+      return callback(result);
+    })
+    .catch(error => console.log('error', error));
+};
+
 const getShipmentLog = (callback: any) => {
   var myHeaders = new Headers();
   myHeaders.append('Content-Type', 'application/json');
@@ -111,7 +179,6 @@ const send_activation = (data: any, callback: any) => {
   fetch(`${base_url}/activate_product`, requestOptions)
     .then(response => response.json())
     .then(result => {
-      console.log(result);
       return callback(result);
     })
     .catch(error => console.log('error', error));
@@ -178,10 +245,11 @@ const gen_barcode = (data: any, callback: any) => {
   var raw = JSON.stringify({
     PRODUCT_ID: data.PRODUCT_ID,
     QUANTITY: data.QUANTITY,
-    NAME: '',
+    NAME: data.NAME,
     PRODUCT_NAME: data.PRODUCT_NAME,
     MULTIPLIER: data.MULTIPLIER,
     EMPLOYEE_ID: data.EMPLOYEE_ID,
+    SRC: data.SRC,
   });
   var requestOptions = {
     method: 'POST',
@@ -215,7 +283,30 @@ const submitShipment = (data: any, callback: any) => {
     .catch(error => console.log('error', error));
 };
 
-const product_reduction = (data: any, callback: any) => {
+const product_reduction = async (data: any) => {
+  const myHeaders = new Headers({
+    'Content-Type': 'application/json',
+  });
+
+  const requestOptions: RequestInit = {
+    method: 'POST',
+    headers: myHeaders,
+    body: JSON.stringify(data),
+  };
+
+  try {
+    const response = await fetch(
+      `${base_url}/product_reduction`,
+      requestOptions,
+    );
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Fetch error:', error);
+  }
+};
+
+const getBarcodeData = (data: any, callback: any) => {
   const myHeaders = new Headers();
   myHeaders.append('Content-Type', 'application/json');
   var raw = JSON.stringify(data);
@@ -225,7 +316,7 @@ const product_reduction = (data: any, callback: any) => {
     body: raw,
     redirect: 'follow',
   };
-  fetch(`${base_url}/product_reduction`, requestOptions)
+  fetch(`${base_url}/get_barcode_data`, requestOptions)
     .then(response => response.json())
     .then(result => {
       return callback(result);
@@ -278,6 +369,24 @@ const get_api_status = (callback: (status: boolean) => void) => {
 };
 
 class http_request {
+  getProductInventory = (callback: any) => {
+    getProductInventory((result: any) => {
+      return callback(result);
+    });
+  };
+  getProductNameFromTrans = async (data: any, callback: Function) => {
+    getProductNameFromTrans(data, (result: any) => {
+      return callback(result);
+    });
+  };
+  revertTransaction = (data: any) => {
+    revertTransaction(data);
+  };
+  getTransactions = (callback: any) => {
+    getTransaction((result: any) => {
+      return callback(result);
+    });
+  };
   getShipmentLog = (callback: any) => {
     getShipmentLog((result: any) => {
       return callback(result);
@@ -338,8 +447,11 @@ class http_request {
       return callback(result);
     });
   };
-  productRelease = (data: any, callback: any) => {
-    product_reduction(data, (result: any) => {
+  productRelease = async (data: any) => {
+    return await product_reduction(data);
+  };
+  getBarcodeData = (data: any, callback: any) => {
+    getBarcodeData(data, (result: any) => {
       return callback(result);
     });
   };

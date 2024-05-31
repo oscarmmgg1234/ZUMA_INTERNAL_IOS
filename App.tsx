@@ -5,7 +5,7 @@
  * @format
  */
 
-import React from 'react';
+import React, {useEffect} from 'react';
 import type {PropsWithChildren} from 'react';
 
 import {
@@ -27,6 +27,17 @@ import LABEL_MODAL from './src/modals/label_modal';
 import Main_Shipment from './src/modals/main_shipment_modal';
 import Log from './src/modals/history_log';
 import OnlineStatusIndicator from './src/Components/status_indicator';
+import InventoryModal_Main from './src/modals/inventory_modal';
+import {
+  Camera,
+  useCodeScanner,
+  useCameraDevice,
+} from 'react-native-vision-camera';
+
+import {http_req} from './src/http/req';
+import TransactionLog from './src/modals/transaction_log';
+
+const http = http_req();
 
 type SectionProps = PropsWithChildren<{
   title: string;
@@ -64,6 +75,13 @@ function App(): JSX.Element {
   const pressAnim3 = React.useRef(new Animated.Value(1)).current;
   const pressAnim4 = React.useRef(new Animated.Value(1)).current;
 
+  // // Example usage
+  // connectWebSocket().catch(() => {
+  //   // If initial connection fails, attempt to reconnect
+  //   attemptReconnect();
+  // });
+  const device = useCameraDevice('back');
+
   const onPressIn = (button: number) => {
     const anim =
       button === 1
@@ -98,6 +116,8 @@ function App(): JSX.Element {
 
   const isDarkMode = useColorScheme() === 'dark';
   //states
+  const [transactionModalLog, setTransactionModalLog] =
+    React.useState<boolean>(false);
   const [activation_modal_visible, set_activation_modal_visible] =
     React.useState(false);
   const [release_modal_visible, set_release_modal_visible] =
@@ -106,10 +126,37 @@ function App(): JSX.Element {
     React.useState(false);
   const [label_modal_visible, set_label_modal_visible] = React.useState(false);
   const [historyLog, setHistoryLog] = React.useState<boolean>(false);
+
   const [refresh, setRefresh] = React.useState<boolean>(false);
   const [refreshHistory, setRefreshHistory] = React.useState<boolean>(false);
+  const [refreshTransaction, setRefreshTransaction] =
+    React.useState<boolean>(false);
+  const [barcodeCheck, setBarcodeCheck] = React.useState<boolean>(false);
+  const [barcodeData, setBarcodeData] = React.useState<string>('');
+  const [barcodeDisplay, setBarcodeDisplay] = React.useState<any>({});
+  const [inventoryModal, setInventoryModal] = React.useState<any>(false);
 
+  const codeScanner = useCodeScanner({
+    codeTypes: ['qr'],
+    onCodeScanned: codes => {
+      setBarcodeData(codes[0].value);
+    },
+  });
 
+  const barcodeDataRetrieve = () => {
+    http.getBarcodeData(
+      {barcode: barcodeData, employee: '000002'},
+      (result: any) => {
+        setBarcodeDisplay(result.data[0]);
+      },
+    );
+  };
+
+  React.useEffect(() => {
+    if (barcodeData) {
+      barcodeDataRetrieve();
+    }
+  }, [barcodeData]);
   React.useEffect(() => {
     setRefreshHistory(true);
     setTimeout(() => {
@@ -138,143 +185,290 @@ function App(): JSX.Element {
         />
       </SafeAreaView>
       <View style={styles.main_view}>
-        <Text style={{color: '#a5beba', fontSize: 60, fontWeight: '500'}}>
-          ZUMA INVENTORY
-        </Text>
-        {/* <Text
+        {barcodeCheck == false ? (
+          <>
+            <View
+              style={{
+                flexDirection: 'column',
+                display: 'flex',
+                alignItems: 'center',
+              }}>
+              <Text style={{color: '#a5beba', fontSize: 60, fontWeight: '500'}}>
+                ZUMA INVENTORY
+              </Text>
+              <View style={{alignItems: 'center', justifyContent: 'center'}}>
+                <Text
+                  style={{
+                    color: 'gray',
+                    fontSize: 10,
+                  }}>
+                  Created By Oscar Maldonado
+                </Text>
+                <Text
+                  style={{
+                    color: 'gray',
+                    fontSize: 10,
+                  }}>
+                  App Version 2.2.0
+                </Text>
+              </View>
+            </View>
+
+            {/* <Text
           style={{
             backgroundColor: '#60BF89',
             borderWidth: 1,
             width: '100%',
             height: '0.5%',
           }}></Text> */}
-        <LinearGradient
-          colors={['#AFCCA9', '#AFCCA9']}
-          style={styles.content_view_border}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 1}}>
-          <View style={styles.content_view}>
-            <TouchableOpacity
-              style={{alignSelf: 'flex-end', paddingRight: 40}}
-              onPress={() => hardRefresh()}>
-              <Text style={{color: 'gray', fontSize: 10}}>Refresh</Text>
-              <Ionicons
-                name="refresh-circle-outline"
-                size={35}
-                color={'gray'}
-              />
-            </TouchableOpacity>
-            <Animated.View
-              style={[
-                styles.content_button,
-                {
-                  transform: [{scale: pressAnim}],
-                  elevation: pressAnim.interpolate({
-                    inputRange: [0.9, 1],
-                    outputRange: [2, 5],
-                  }),
-                },
-              ]}>
-              <TouchableOpacity
-                onPressIn={() => onPressIn(1)}
-                onPressOut={() => onPressOut(1)}
-                onPress={() => set_activation_modal_visible(true)}
-                style={styles.touchableArea}>
-                <Text style={styles.content_button_text}>
-                  PRODUCT ACTIVATION
-                </Text>
-                <Ionicons name="swap-horizontal" size={45} color={'#CFEDEE'} />
-              </TouchableOpacity>
-            </Animated.View>
-            <Animated.View
-              style={[
-                styles.content_button,
-                {
-                  transform: [{scale: pressAnim2}],
-                  elevation: pressAnim2.interpolate({
-                    inputRange: [0.9, 1],
-                    outputRange: [2, 5],
-                  }),
-                },
-              ]}>
-              <TouchableOpacity
-                onPressIn={() => onPressIn(2)}
-                onPressOut={() => onPressOut(2)}
-                onPress={() => set_release_modal_visible(true)}
-                style={styles.touchableArea}>
-                <Text style={styles.content_button_text}>PRODUCT RELEASE</Text>
-                <Ionicons name="remove-circle" size={45} color={'#CFEDEE'} />
-              </TouchableOpacity>
-            </Animated.View>
-            <Animated.View
-              style={[
-                styles.content_button,
-                {
-                  transform: [{scale: pressAnim3}],
-                  elevation: pressAnim3.interpolate({
-                    inputRange: [0.9, 1],
-                    outputRange: [2, 5],
-                  }),
-                },
-              ]}>
-              <TouchableOpacity
-                onPressIn={() => onPressIn(3)}
-                onPressOut={() => onPressOut(3)}
-                onPress={() => set_shipment_modal_visible(true)}
-                style={styles.touchableArea}>
-                <Text style={styles.content_button_text}>SHIPMENT</Text>
-                <Ionicons name="archive-outline" size={45} color={'#CFEDEE'} />
-              </TouchableOpacity>
-            </Animated.View>
-            <Animated.View
-              style={[
-                styles.content_button,
-                {
-                  transform: [{scale: pressAnim4}],
-                  elevation: pressAnim4.interpolate({
-                    inputRange: [0.9, 1],
-                    outputRange: [2, 5],
-                  }),
-                },
-              ]}>
-              <TouchableOpacity
-                onPressIn={() => onPressIn(4)}
-                onPressOut={() => onPressOut(4)}
-                onPress={() => set_label_modal_visible(true)}
-                style={styles.touchableArea}>
-                <Text style={styles.content_button_text}>PRINT LABEL</Text>
-                <Ionicons name="print" size={45} color={'#CFEDEE'} />
-              </TouchableOpacity>
-            </Animated.View>
+            <LinearGradient
+              colors={['#AFCCA9', '#AFCCA9']}
+              style={styles.content_view_border}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 1}}>
+              <View style={styles.content_view}>
+                <View
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    width: '100%',
+                    paddingHorizontal: 20,
+                  }}>
+                  <OnlineStatusIndicator />
+
+                  <TouchableOpacity
+                    style={{alignSelf: 'flex-end', paddingRight: 40}}
+                    onPress={() => hardRefresh()}>
+                    <Text style={{color: 'gray', fontSize: 10}}>Refresh</Text>
+                    <Ionicons
+                      name="refresh-circle-outline"
+                      size={35}
+                      color={'gray'}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <Animated.View
+                  style={[
+                    styles.content_button,
+                    {
+                      transform: [{scale: pressAnim}],
+                      elevation: pressAnim.interpolate({
+                        inputRange: [0.9, 1],
+                        outputRange: [2, 5],
+                      }),
+                    },
+                  ]}>
+                  <TouchableOpacity
+                    onPressIn={() => onPressIn(1)}
+                    onPressOut={() => onPressOut(1)}
+                    onPress={() => set_activation_modal_visible(true)}
+                    style={styles.touchableArea}>
+                    <Text style={styles.content_button_text}>
+                      PRODUCT ACTIVATION
+                    </Text>
+                    <Ionicons
+                      name="swap-horizontal"
+                      size={45}
+                      color={'#CFEDEE'}
+                    />
+                  </TouchableOpacity>
+                </Animated.View>
+                <Animated.View
+                  style={[
+                    styles.content_button,
+                    {
+                      transform: [{scale: pressAnim2}],
+                      elevation: pressAnim2.interpolate({
+                        inputRange: [0.9, 1],
+                        outputRange: [2, 5],
+                      }),
+                    },
+                  ]}>
+                  <TouchableOpacity
+                    onPressIn={() => onPressIn(2)}
+                    onPressOut={() => onPressOut(2)}
+                    onPress={() => set_release_modal_visible(true)}
+                    style={styles.touchableArea}>
+                    <Text style={styles.content_button_text}>
+                      PRODUCT RELEASE
+                    </Text>
+                    <Ionicons
+                      name="remove-circle"
+                      size={45}
+                      color={'#CFEDEE'}
+                    />
+                  </TouchableOpacity>
+                </Animated.View>
+                <Animated.View
+                  style={[
+                    styles.content_button,
+                    {
+                      transform: [{scale: pressAnim3}],
+                      elevation: pressAnim3.interpolate({
+                        inputRange: [0.9, 1],
+                        outputRange: [2, 5],
+                      }),
+                    },
+                  ]}>
+                  <TouchableOpacity
+                    onPressIn={() => onPressIn(3)}
+                    onPressOut={() => onPressOut(3)}
+                    onPress={() => set_shipment_modal_visible(true)}
+                    style={styles.touchableArea}>
+                    <Text style={styles.content_button_text}>SHIPMENT</Text>
+                    <Ionicons
+                      name="archive-outline"
+                      size={45}
+                      color={'#CFEDEE'}
+                    />
+                  </TouchableOpacity>
+                </Animated.View>
+                <Animated.View
+                  style={[
+                    styles.content_button,
+                    {
+                      transform: [{scale: pressAnim4}],
+                      elevation: pressAnim4.interpolate({
+                        inputRange: [0.9, 1],
+                        outputRange: [2, 5],
+                      }),
+                    },
+                  ]}>
+                  <TouchableOpacity
+                    onPressIn={() => onPressIn(4)}
+                    onPressOut={() => onPressOut(4)}
+                    onPress={() => set_label_modal_visible(true)}
+                    style={styles.touchableArea}>
+                    <Text style={styles.content_button_text}>PRINT LABEL</Text>
+                    <Ionicons name="print" size={45} color={'#CFEDEE'} />
+                  </TouchableOpacity>
+                </Animated.View>
+                <View
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-around',
+                  }}>
+                  <TouchableOpacity
+                    onPress={() => setTransactionModalLog(true)}
+                    style={{
+                      alignSelf: 'flex-end',
+                      paddingRight: 50,
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                    }}>
+                    <Text style={{color: 'rgba(0,0,0,0.5)', paddingRight: 10}}>
+                      Transactions
+                    </Text>
+                    <Ionicons
+                      name="file-tray-stacked-outline"
+                      size={30}
+                      color={'rgba(0,0,0,0.5)'}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setHistoryLog(true)}
+                    style={{
+                      alignSelf: 'flex-end',
+                      paddingRight: 50,
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                    }}>
+                    <Text style={{color: 'rgba(0,0,0,0.5)', paddingRight: 10}}>
+                      Recent
+                    </Text>
+                    <Ionicons
+                      name="file-tray-full-outline"
+                      size={30}
+                      color={'rgba(0,0,0,0.5)'}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setInventoryModal(true)}
+                    style={{
+                      alignSelf: 'flex-end',
+                      paddingRight: 50,
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                    }}>
+                    <Text style={{color: 'rgba(0,0,0,0.5)', paddingRight: 10}}>
+                      Inventory
+                    </Text>
+                    <Ionicons name="server-outline" size={35} color={'gray'} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setBarcodeCheck(true);
+                    }}>
+                    <Ionicons
+                      name="barcode"
+                      size={30}
+                      color={'rgba(0,0,0,0.5)'}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </LinearGradient>
+          </>
+        ) : (
+          <>
+            <Camera
+              style={StyleSheet.absoluteFill}
+              device={device}
+              isActive={barcodeCheck}
+              codeScanner={codeScanner}
+            />
             <View
               style={{
-                width: '100%',
                 display: 'flex',
                 flexDirection: 'row',
+                width: '100%',
+                justifyContent: 'space-between',
+                top: '-64%',
+                paddingHorizontal: 10,
+                paddingVertical: 2,
                 alignItems: 'center',
-                justifyContent: 'space-around',
               }}>
-              <OnlineStatusIndicator />
-              <TouchableOpacity
-                onPress={() => setHistoryLog(true)}
-                style={{
-                  alignSelf: 'flex-end',
-                  paddingRight: 50,
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                }}>
-                <Text style={{color: '#A5BE00', paddingRight: 10}}>Recent</Text>
+              <TouchableOpacity>
                 <Ionicons
-                  name="file-tray-full-outline"
-                  size={30}
-                  color={'#A5BE00'}
+                  name="close-circle-outline"
+                  size={50}
+                  color={'lightgray'}
+                  onPress={() => {
+                    setBarcodeCheck(false);
+                    setBarcodeData('');
+                    setBarcodeDisplay({});
+                  }}
                 />
               </TouchableOpacity>
+              {barcodeData && (
+                <View
+                  style={{
+                    backgroundColor: 'white',
+                    borderColor: 'black',
+                    borderWidth: 2,
+                  }}>
+                  <Text>{`Barcode ID: ${barcodeDisplay.BarcodeID}`}</Text>
+                  <Text>{`Product: ${barcodeDisplay.Product}`}</Text>
+                  <Text>{`Product Status: ${barcodeDisplay.Status}`}</Text>
+                  <Text>{`Employee Responsible: ${barcodeDisplay.Employee}`}</Text>
+                  <Text>{`Quantity: ${barcodeDisplay.Quantity}`}</Text>
+                  <Text>{`Date: ${barcodeDisplay.Date}`}</Text>
+                </View>
+              )}
             </View>
-          </View>
-        </LinearGradient>
+          </>
+        )}
       </View>
+
       {/* //------------------------------- */}
       <ACTIVATION_MODAL
         refresh={refresh}
@@ -311,6 +505,20 @@ function App(): JSX.Element {
         set_visible={setHistoryLog}
         title="History Log"
         modal_completion={setHistoryLog}
+      />
+      <TransactionLog
+        refresh={refreshTransaction}
+        visible={transactionModalLog}
+        set_visible={setTransactionModalLog}
+        title="Transaction Log"
+        modal_completion={setTransactionModalLog}
+      />
+      <InventoryModal_Main
+        visible={inventoryModal}
+        set_visible={setInventoryModal}
+        title="Product Inventory"
+        modal_completion={setInventoryModal}
+        refresh={refresh}
       />
     </>
   );

@@ -10,16 +10,22 @@ import {
   FlatList,
   Animated,
   Alert,
+  NativeModules,
 } from 'react-native';
+import Slider from '@react-native-community/slider';
 import MODAL_BASE from '../modal_component';
 import {http_req} from '../http/req';
 import ErrorAlert from '../alerts/Error_Alert';
+import CustomLoader from '../Components/LoadingIndicators/loading';
 
+const {BarcodePrinterModule} = NativeModules;
 const http = http_req();
 
 export default function Main_Shipment(props: any) {
   const [error, setError] = React.useState(false);
   const errorData = React.useRef<any>({});
+  const [loading, setLoading] = React.useState(false);
+  const [loadingText, setLoadingText] = React.useState('Loading...');
 
   function setErrorData(data: any) {
     errorData.current = data;
@@ -45,7 +51,7 @@ export default function Main_Shipment(props: any) {
   const [selected_product, set_selected_product] = React.useState<any>({});
   const [selected_company, set_selected_company] = React.useState<any>({});
   const [selected_employee, set_selected_employee] = React.useState<any>({});
-  const [quantity, set_quantity] = React.useState<string>('0');
+  const [quantity, set_quantity] = React.useState(70); // updated to default to 1
   //controls the state of the modal
   const [modal_state, set_modal_state] = React.useState(true); // list of shipments or add shipment modal
 
@@ -53,24 +59,60 @@ export default function Main_Shipment(props: any) {
   const [keyboardOffset, setKeyboardOffset] = React.useState(0);
 
   const submitShimpent = () => {
+    setLoading(true);
+    setLoadingText('Submitting Shipments...');
     const http_data = shipment_list.map((item: any) => {
       return {
         COMPANY_ID: item.company.COMPANY_ID,
         PRODUCT_ID: item.product.PRODUCT_ID,
         EMPLOYEE_ID: item.employee.EMPLOYEE_ID,
         QUANTITY: item.quantity,
-        SHIPMENT_TYPE: item.product.SHIPMENT_TYPE,
         TYPE: item.product.TYPE,
+        PROCESS_TOKEN: item.product.SHIPMENT_TOKEN,
+        PRODUCT_NAME: item.product.NAME,
       };
     });
     http.submit_shipment(http_data, (data: any) => {
-      if (data.error) {
-        setError(true);
-        setErrorData(data);
-        return;
+      setLoading(false);
+      if (data.data.barcodeBuffers.length > 0) {
+        BarcodePrinterModule.printBarcodes(data.data.barcodeBuffers, result => {
+          if (result == 0) {
+            if (data.data.errorProducts.length > 0) {
+              Alert.alert(
+                'Partial Success',
+                'Some barcodes were not printed due to core engine errors. Please retry the following products: ' +
+                  data.data.errorProducts.join(', '),
+              );
+            } else {
+              Alert.alert(
+                'Success',
+                'Shipments have been submitted and barcodes have been printed',
+              );
+            }
+            set_shipment_list([]);
+            props.set_visible(false);
+          } else if (result == 1) {
+            if (data.data.errorProducts.length > 0) {
+              Alert.alert(
+                'Partial Success',
+                'Barcodes were cancelled but there were problems in server core, retry shipment for these products: ' +
+                  data.data.errorProducts.join(', '),
+              );
+              set_shipment_list([]);
+              props.set_visible(false);
+            } else {
+              Alert.alert('Error', 'Barcode Print Cancelled');
+              set_shipment_list([]);
+              props.set_visible(false);
+            }
+          } else {
+            Alert.alert('Error', 'Barcode Print Failed');
+          }
+        });
       } else {
-        set_shipment_list([]);
         Alert.alert('Success', 'Shipments have been submitted');
+        set_shipment_list([]);
+        props.set_visible(false);
       }
     });
   };
@@ -87,6 +129,7 @@ export default function Main_Shipment(props: any) {
     set_selected_product({});
     set_selected_employee({});
     set_selected_company({});
+    init();
   };
 
   const reset_all_shipments = () => {
@@ -102,6 +145,15 @@ export default function Main_Shipment(props: any) {
   };
 
   const add_shipment_object = (shipment_object: any) => {
+    if (
+      !shipment_object.company ||
+      !shipment_object.product ||
+      !shipment_object.employee ||
+      shipment_object.quantity < 1
+    ) {
+      return -1;
+    }
+
     const parsedObject = {
       company: shipment_object.company,
       product: shipment_object.product,
@@ -109,11 +161,7 @@ export default function Main_Shipment(props: any) {
       quantity: shipment_object.quantity,
     };
     set_shipment_list([...shipment_list, parsedObject]);
-  };
-
-  const submitShipments = () => {
-    //send server a list of shipment objects
-    set_shipment_list([]);
+    return 0;
   };
 
   React.useEffect(() => {
@@ -177,7 +225,7 @@ export default function Main_Shipment(props: any) {
         set_employees(newRes);
       }
     });
-  }
+  };
 
   React.useEffect(() => {
     init();
@@ -194,9 +242,17 @@ export default function Main_Shipment(props: any) {
         return;
       } else {
         const newRes = data.data.filter(
-          (item: any) => item.SHIPMENT_TYPE !== null,
+          (item: any) =>
+            item.SHIPMENT_TYPE !== null &&
+            (item.TYPE !== '122' ? true : item.COMPANY == '888' ? true : false),
         );
-        const format_data = newRes.map((item: any) => {
+        const exeption_filter = newRes.filter(
+          (item: any) =>
+            item.PRODUCT_ID != '78c8da4d' &&
+            item.PRODUCT_ID != '4d1f188e' &&
+            item.PRODUCT_ID != '2wdf4rdh',
+        );
+        const format_data = exeption_filter.map((item: any) => {
           return {...item, focus: false};
         });
         set_products(format_data);
@@ -250,7 +306,7 @@ export default function Main_Shipment(props: any) {
     set_employees(newRes);
   };
 
-  const company_entry = (item: any) => {
+  const company_entry = (item: any, index: any) => {
     return (
       <TouchableOpacity
         onPress={() => onFocus_Company(item)}
@@ -263,7 +319,7 @@ export default function Main_Shipment(props: any) {
           borderRadius: 50,
           alignItems: 'center',
           justifyContent: 'center',
-          borderWidth: 4,
+          borderWidth: item.focus ? 6 : 3,
           borderColor: item.focus ? 'coral' : '#89BE63',
           shadowColor: '#000',
           shadowOffset: {
@@ -278,7 +334,7 @@ export default function Main_Shipment(props: any) {
     );
   };
 
-  const product_entry = (items: any) => {
+  const product_entry = (items: any, index: any) => {
     return (
       <TouchableOpacity
         onPress={() => {
@@ -286,15 +342,15 @@ export default function Main_Shipment(props: any) {
         }}
         style={{
           width: 300,
-          height: 70,
-          backgroundColor: '#89BE63',
+          height: items.focus ? 100 : 70,
+          backgroundColor: index % 2 == 0 ? '#89BE63' : '#9CBFA9',
           marginVertical: 5,
           alignSelf: 'center',
           borderRadius: 50,
           alignItems: 'center',
           justifyContent: 'space-around',
           flexDirection: 'row',
-          borderWidth: 4,
+          borderWidth: items.focus ? 6 : 3,
           borderColor: items.focus ? 'coral' : '#89BE63',
           shadowColor: '#000',
           shadowOffset: {
@@ -320,20 +376,20 @@ export default function Main_Shipment(props: any) {
     );
   };
 
-  const employee_entry = (items: any) => {
+  const employee_entry = (items: any, index: any) => {
     return (
       <TouchableOpacity
         onPress={() => onFocus_Employee(items)}
         style={{
           width: 300,
           height: 50,
-          backgroundColor: '#89BE63',
+          backgroundColor: index % 2 == 0 ? '#89BE63' : '#66A3A4',
           marginVertical: 5,
           alignSelf: 'center',
           borderRadius: 50,
           alignItems: 'center',
           justifyContent: 'center',
-          borderWidth: 3,
+          borderWidth: items.focus ? 6 : 3,
           borderColor: items.focus ? 'coral' : '#89BE63',
           shadowColor: '#000',
           shadowOffset: {
@@ -440,7 +496,7 @@ export default function Main_Shipment(props: any) {
                   }}>
                   <FlatList
                     data={companies}
-                    renderItem={({item}) => company_entry(item)}
+                    renderItem={({item, index}) => company_entry(item, index)}
                     keyExtractor={(item: any) => item.COMPANY_ID}
                   />
                 </View>
@@ -475,7 +531,7 @@ export default function Main_Shipment(props: any) {
                   }}>
                   <FlatList
                     data={products}
-                    renderItem={({item}) => product_entry(item)}
+                    renderItem={({item, index}) => product_entry(item, index)}
                     keyExtractor={item => item.PRODUCT_ID}
                   />
                 </View>
@@ -512,7 +568,7 @@ export default function Main_Shipment(props: any) {
                   }}>
                   <FlatList
                     data={employees}
-                    renderItem={({item}) => employee_entry(item)}
+                    renderItem={({item, index}) => employee_entry(item, index)}
                     keyExtractor={item => item.EMPLOYEE_ID}
                   />
                 </View>
@@ -535,22 +591,19 @@ export default function Main_Shipment(props: any) {
                   borderWidth: 3,
                   borderColor: '#AFCCA9',
                 }}>
-                <Text style={{fontSize: 16, marginBottom: 10}}>Quantity</Text>
-                <TextInput
-                  placeholderTextColor="white"
-                  placeholder="Enter Quantity"
+                <Text style={{fontSize: 16, marginBottom: 10}}>
+                  Quantity: {quantity}
+                </Text>
+                <Slider
+                  style={{width: 200, height: 40}}
+                  minimumValue={1}
+                  maximumValue={110}
+                  step={1}
                   value={quantity}
-                  onChange={e => {
-                    set_quantity(e.nativeEvent.text);
-                  }}
-                  style={{
-                    width: 110,
-                    height: 30,
-                    backgroundColor: 'rgba(0,0,0,0.3)',
-                    borderRadius: 20,
-                    color: 'white',
-                    paddingHorizontal: 10,
-                  }}
+                  onValueChange={value => set_quantity(value)}
+                  minimumTrackTintColor="#89BE63"
+                  maximumTrackTintColor="silver"
+                  thumbTintColor="#89BE63"
                 />
               </View>
             </View>
@@ -570,15 +623,19 @@ export default function Main_Shipment(props: any) {
                 onPressIn={onPressIn}
                 onPressOut={onPressOut}
                 onPress={() => {
-                  set_modal_state(true);
                   //insert shipment object
-                  add_shipment_object({
+                  const result = add_shipment_object({
                     company: selected_company,
                     product: selected_product,
                     employee: selected_employee,
-                    quantity: Number(quantity),
+                    quantity: quantity,
                   });
-                  reset_all();
+                  if (result == 0) {
+                    reset_all();
+                    set_modal_state(true);
+                  } else {
+                    Alert.alert('Error', 'Please fill all fields');
+                  }
                 }}
                 style={{
                   width: 300,
@@ -603,6 +660,7 @@ export default function Main_Shipment(props: any) {
             </Animated.View>
           </>
         )}
+        <CustomLoader isLoading={loading} message={loadingText} />
       </MODAL_BASE>
     </>
   );
@@ -697,12 +755,15 @@ const styles = StyleSheet.create({
     height: '90%',
     backgroundColor: '#CFEDEE',
     borderRadius: 20,
+    borderWidth: 4,
+    borderColor: '#AFCCA9',
+    borderStyle: 'solid',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.6,
     shadowRadius: 3.84,
   },
   employee_flatlist_view: {

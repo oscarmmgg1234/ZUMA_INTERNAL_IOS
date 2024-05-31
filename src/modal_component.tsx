@@ -5,6 +5,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 
 export default function MODAL_BASE(props: any) {
+  
   return (
     <Modal
       animationType="slide"

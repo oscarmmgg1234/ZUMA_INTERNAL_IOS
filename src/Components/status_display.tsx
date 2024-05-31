@@ -7,14 +7,14 @@ const StatusDisplay = React.memo((props: any) => {
     <View style={{display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
       <Text
         style={{
-          color: props.online ? 'green' : 'red',
-          paddingRight: 10,
+          paddingRight: 5,
+          color: 'gray',
         }}>
-        {props.online ? 'Online' : 'System Down'}
+        System Status:
       </Text>
       <Ionicons
         name="globe-outline"
-        size={30}
+        size={25}
         color={props.online ? 'green' : 'red'}
       />
     </View>
