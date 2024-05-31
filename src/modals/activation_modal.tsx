@@ -54,6 +54,7 @@ export default function ACTIVATION_MODAL(props: any) {
 
   const pressAnim = React.useRef(new Animated.Value(1)).current;
   const pressAnim2 = React.useRef(new Animated.Value(1)).current;
+  const pressAnim3 = React.useRef(new Animated.Value(1)).current;
   const onPressIn2 = () => {
     Animated.timing(pressAnim2, {
       toValue: 0.9,
@@ -63,6 +64,20 @@ export default function ACTIVATION_MODAL(props: any) {
   };
   const onPressOut2 = () => {
     Animated.timing(pressAnim2, {
+      toValue: 1,
+      duration: 100,
+      useNativeDriver: true,
+    }).start();
+  };
+  const onPressIn3 = () => {
+    Animated.timing(pressAnim3, {
+      toValue: 0.9,
+      duration: 100,
+      useNativeDriver: true,
+    }).start();
+  };
+  const onPressOut3 = () => {
+    Animated.timing(pressAnim3, {
       toValue: 1,
       duration: 100,
       useNativeDriver: true,
@@ -107,7 +122,7 @@ export default function ACTIVATION_MODAL(props: any) {
   const [amount, set_amount] = React.useState(70); // Updated to default to 1
   const [multiplier, set_multiplier] = React.useState(1); // Updated to default to 1
 
-  const [step, set_step] = React.useState(false);
+  const [step, set_step] = React.useState(true);
   const [employee, setEmployee] = React.useState('');
 
   const [employee_list, set_employee_list] = React.useState<
@@ -200,7 +215,7 @@ export default function ACTIVATION_MODAL(props: any) {
       }) => {
         if (item.PRODUCT_ID === product) {
           if (item.focus === true) {
-            set_step(false);
+            set_step(true);
             return {...item, focus: false};
           } else {
             set_step(true);
@@ -217,7 +232,7 @@ export default function ACTIVATION_MODAL(props: any) {
     const newRes = employee_list.map(item => {
       if (item.NAME === employee.NAME) {
         if (item.focus === true) {
-          set_step(false);
+          set_step(true);
           return {...item, focus: false};
         } else {
           setEmployee(employee.NAME);
@@ -275,7 +290,75 @@ export default function ACTIVATION_MODAL(props: any) {
             // Reset the form fields and any other necessary states
             setEmployee('');
             setSearchQuery('');
-            set_amount(1); // Reset to default value
+            set_amount(70); // Reset to default value
+            set_multiplier(1); // Reset to default value
+            props.modal_completion(false);
+
+            // Re-initialize or refresh any necessary data
+            init();
+          } else if (response == 1) {
+            Alert.alert('Error', 'Barcode Printing cancelled');
+          } else if (response == 2) {
+            Alert.alert('Error', 'Barcode Printing failed');
+          }
+        },
+      );
+      // Callback logic after sending the activation request
+    });
+
+    // Show success alert
+  };
+
+  const activate_release = () => {
+    const employee = employee_list.find((item: any) => item.focus);
+    const employee_id = employee?.EMPLOYEE_ID;
+    const product = filteredData.find((item: any) => item.focus);
+
+    // Check for undefined or null values and validate amount and multiplier
+    if (
+      !employee_id ||
+      !product ||
+      isNaN(Number(multiplier)) ||
+      Number(multiplier) != 1
+    ) {
+      Alert.alert(
+        'Error',
+        'Please fill all fields or for act release multiplier must be 1',
+      );
+      return;
+    }
+
+    // Construct the request object using the found employee and product details
+    const request = {
+      EMPLOYEE_ID: employee_id,
+      PRODUCT_ID: product.PRODUCT_ID,
+      QUANTITY: amount,
+      MULTIPLIER: multiplier,
+      EMPLOYEE_NAME: employee.NAME,
+      PRODUCT_NAME: product.NAME,
+      SRC: 'Activation',
+      PROCESS_TOKEN: product.ACTIVATION_TOKEN,
+      PROCESS: 'activation',
+    };
+    setLoading(true);
+    setLoadingText('Activating product and awaiting printing barcode...');
+    // Send the activation request
+    http.submitActRelease(request, (result: any) => {
+      setLoading(false);
+
+      BarcodePrinterModule.printBarcodes(
+        result.data.barcodeBuffer,
+        response => {
+          if (response == 0) {
+            Alert.alert(
+              'Success',
+              'Activation/Release Sent and Printing Barcode...',
+            );
+
+            // Reset the form fields and any other necessary states
+            setEmployee('');
+            setSearchQuery('');
+            set_amount(70); // Reset to default value
             set_multiplier(1); // Reset to default value
             props.modal_completion(false);
 
@@ -647,7 +730,6 @@ export default function ACTIVATION_MODAL(props: any) {
                 style={styles.slider}
                 minimumValue={1}
                 maximumValue={30}
-                
                 tapToSeek={true}
                 step={1}
                 value={multiplier}
@@ -673,7 +755,9 @@ export default function ACTIVATION_MODAL(props: any) {
                   width: '100%',
                   height: '10%',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  alignContent: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'space-evenly',
                 }}>
                 <Animated.View
                   style={[
@@ -696,6 +780,31 @@ export default function ACTIVATION_MODAL(props: any) {
                     <Text style={styles.activation_button_text}>Activate</Text>
                   </TouchableOpacity>
                 </Animated.View>
+                {multiplier == 1 ? (
+                  <Animated.View
+                    style={[
+                      styles.activation_modal_submit,
+                      {
+                        transform: [{scale: pressAnim3}],
+                        elevation: pressAnim3.interpolate({
+                          inputRange: [0.9, 1],
+                          outputRange: [2, 5],
+                        }),
+                      },
+                    ]}>
+                    <TouchableOpacity
+                      onPressIn={onPressIn3}
+                      onPressOut={onPressOut3}
+                      style={styles.touchableArea}
+                      onPress={() => {
+                        activate_release();
+                      }}>
+                      <Text style={styles.activation_button_text}>
+                        Activate/Release
+                      </Text>
+                    </TouchableOpacity>
+                  </Animated.View>
+                ) : null}
               </View>
             </>
           )}

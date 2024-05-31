@@ -165,6 +165,25 @@ const get_product = (type: any, callback: any) => {
     .catch(error => console.log('error', error));
 };
 
+const submit_act_release = (data: any, callback: any) => {
+  var myHeaders = new Headers();
+  myHeaders.append('Content-Type', 'application/json');
+  var raw = JSON.stringify(data);
+
+  var requestOptions = {
+    method: 'POST',
+    headers: myHeaders,
+    body: raw,
+    redirect: 'follow',
+  };
+  fetch(`${base_url}/act-red-product`, requestOptions)
+    .then(response => response.json())
+    .then(result => {
+      return callback(result);
+    })
+    .catch(error => console.log('error', error));
+};
+
 const send_activation = (data: any, callback: any) => {
   var myHeaders = new Headers();
   myHeaders.append('Content-Type', 'application/json');
@@ -434,6 +453,11 @@ class http_request {
   };
   getCompanyInfo = (callback: any) => {
     getCompanyInfo((result: any) => {
+      return callback(result);
+    });
+  };
+  submitActRelease = (data: any, callback: any) => {
+    submit_act_release(data, (result: any) => {
       return callback(result);
     });
   };
