@@ -51,13 +51,42 @@ export default function Main_Shipment(props: any) {
   const [selected_product, set_selected_product] = React.useState<any>({});
   const [selected_company, set_selected_company] = React.useState<any>({});
   const [selected_employee, set_selected_employee] = React.useState<any>({});
-  const [quantity, set_quantity] = React.useState(70); // updated to default to 1
+  const [quantity, setQuantity] = React.useState('70'); // updated to default to 1
   //controls the state of the modal
   const [modal_state, set_modal_state] = React.useState(true); // list of shipments or add shipment modal
 
   //offset for any keyboard activity
   const [keyboardOffset, setKeyboardOffset] = React.useState(0);
 
+  const handleQuantityChange = newQuantity => {
+    if (!isNaN(newQuantity) && newQuantity.trim() !== '') {
+      setQuantity(newQuantity);
+    } else {
+      setQuantity(''); // Clear the input if it's not a valid number
+    }
+  };
+  const renderQuantityInput = () => {
+    return (
+      <>
+        <Text style={{fontSize: 13, marginBottom: 10}}>Quantity:</Text>
+        <TextInput
+          style={{
+            width: 200,
+            height: 40,
+            textAlign: 'center',
+            backgroundColor: '#fff',
+            borderRadius: 5,
+            borderWidth: 1,
+            borderColor: '#89BE63',
+          }}
+          keyboardType="numeric"
+          value={quantity}
+          onChangeText={handleQuantityChange}
+          placeholder="Enter quantity"
+        />
+      </>
+    );
+  };
   const submitShimpent = () => {
     setLoading(true);
     setLoadingText('Submitting Shipments...');
@@ -243,16 +272,10 @@ export default function Main_Shipment(props: any) {
       } else {
         const newRes = data.data.filter(
           (item: any) =>
-            item.SHIPMENT_TYPE !== null &&
-            (item.TYPE !== '122' ? true : item.COMPANY == '888' ? true : false),
+            item.SHIPMENT_TOKEN !== null && !item.ReferenceStockProduct,
         );
-        const exeption_filter = newRes.filter(
-          (item: any) =>
-            item.PRODUCT_ID != '78c8da4d' &&
-            item.PRODUCT_ID != '4d1f188e' &&
-            item.PRODUCT_ID != '2wdf4rdh',
-        );
-        const format_data = exeption_filter.map((item: any) => {
+       
+        const format_data = newRes.map((item: any) => {
           return {...item, focus: false};
         });
         set_products(format_data);
@@ -383,7 +406,7 @@ export default function Main_Shipment(props: any) {
         style={{
           width: 300,
           height: 50,
-          backgroundColor: index % 2 == 0 ? '#89BE63' : '#66A3A4',
+          backgroundColor: index % 2 == 0 ? '#89BE63' : '#76B947',
           marginVertical: 5,
           alignSelf: 'center',
           borderRadius: 50,
@@ -591,20 +614,7 @@ export default function Main_Shipment(props: any) {
                   borderWidth: 3,
                   borderColor: '#AFCCA9',
                 }}>
-                <Text style={{fontSize: 16, marginBottom: 10}}>
-                  Quantity: {quantity}
-                </Text>
-                <Slider
-                  style={{width: 200, height: 40}}
-                  minimumValue={1}
-                  maximumValue={110}
-                  step={1}
-                  value={quantity}
-                  onValueChange={value => set_quantity(value)}
-                  minimumTrackTintColor="#89BE63"
-                  maximumTrackTintColor="silver"
-                  thumbTintColor="#89BE63"
-                />
+                {renderQuantityInput()}
               </View>
             </View>
             {/* submit shipment */}
@@ -706,7 +716,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   submitButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#76B947',
     padding: 10,
     alignItems: 'center',
     marginTop: 20,

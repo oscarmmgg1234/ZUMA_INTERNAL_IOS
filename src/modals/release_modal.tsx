@@ -19,6 +19,7 @@ import {
 } from 'react-native-vision-camera';
 import {http_req} from '../http/req';
 import ErrorAlert from '../alerts/Error_Alert';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const http = http_req();
 
@@ -40,8 +41,8 @@ export default function RELEASE_MODAL(props: any) {
       setError(false);
     }
   }, [error]);
-  const [employee, setEmployee] = React.useState<any>(null);
 
+  const [employee, setEmployee] = React.useState<any>(null);
   const [employee_list, set_employee_list] = React.useState<
     {EMPLOYEE_ID: string; NAME: string; focus: boolean}[]
   >([]);
@@ -88,7 +89,7 @@ export default function RELEASE_MODAL(props: any) {
         style={{
           width: 300,
           height: 50,
-          backgroundColor: index % 2 == 0 ? '#CFEDEE' : '#66A3A4',
+          backgroundColor: index % 2 == 0 ? '#CFEDEE' : '#A7BFC0',
           marginVertical: 5,
           alignSelf: 'center',
           borderRadius: 50,
@@ -159,17 +160,21 @@ export default function RELEASE_MODAL(props: any) {
     http.getProductNameFromTrans(
       {barcode: code, employee: '000002'},
       (result: any) => {
-        if (result.error) {
-          setError(true);
-          setErrorData(result);
+        if (result.error || !result.data || result.data.length === 0) {
+          Alert.alert(
+            'Error',
+            'Barcode not found in system. Manually print another barcode if problem persists.',
+          );
+          setCode('');
+          setProduct(null);
           return;
         } else {
-          console.log(result);
           setProduct(result);
         }
       },
     );
   }, [code]);
+
   const button_focused = (button: string) => {
     if (button === 'emp') {
       set_emp_button_focused(true);
@@ -236,6 +241,7 @@ export default function RELEASE_MODAL(props: any) {
             <Text style={{color: 'white', fontSize: 20, marginBottom: '5%'}}>
               Press to toggle Product Scanner
             </Text>
+            <Ionicons name="camera" style={styles.icon} size={80} />
             {camera ? (
               <Camera
                 {...props}
@@ -256,7 +262,12 @@ export default function RELEASE_MODAL(props: any) {
                   backgroundColor: 'rgba(0,0,0,0.3)',
                   borderRadius: 20,
                 }}>
-                {product && <Text style={{color: 'white', fontSize: 35, fontWeight: 'bold'}}>{product.data.PRODUCT}</Text>}
+                {product && (
+                  <Text
+                    style={{color: 'white', fontSize: 35, fontWeight: 'bold'}}>
+                    {product.data.PRODUCT}
+                  </Text>
+                )}
                 <Text style={{color: 'black', fontSize: 16}}>
                   Barcode Data:{' '}
                 </Text>
@@ -379,7 +390,7 @@ const styles = StyleSheet.create({
   button_view: {
     width: '85%',
     height: '40%',
-    backgroundColor: 'orange',
+    backgroundColor: '#76B947',
     borderStyle: 'solid',
     borderWidth: 4,
     borderColor: '#CFEDEE',
@@ -397,5 +408,12 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  icon: {
+    color: 'rgba(0, 0, 0, 0.3)',
+    position: 'absolute',
+    top: '65%',
+    left: '50%',
+    transform: [{translateX: -40}, {translateY: -40}],
   },
 });

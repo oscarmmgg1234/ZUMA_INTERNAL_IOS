@@ -209,7 +209,7 @@ function App(): JSX.Element {
                     color: 'gray',
                     fontSize: 10,
                   }}>
-                  App Version 2.2.0
+                  App Version 2.2.2
                 </Text>
               </View>
             </View>

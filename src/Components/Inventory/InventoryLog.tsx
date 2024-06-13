@@ -12,6 +12,7 @@ export default function InventoryModal(props) {
   const [loading, setLoading] = useState(true);
   const [loadingText, setLoadingText] = useState('Loading Inventory...');
   const [searchQuery, setSearchQuery] = useState('');
+  const [productsByCompany, setProductsByCompany] = useState([]);
 
   useEffect(() => {
     if (props.visible) {
@@ -21,6 +22,7 @@ export default function InventoryModal(props) {
 
   const fetchInventoryData = () => {
     setLoading(true);
+    
     http.getProductInventory(result => {
       setInventory(result.data);
       setFilteredInventory(result.data);
@@ -29,6 +31,7 @@ export default function InventoryModal(props) {
       }, 1000);
     });
   };
+
 
   const handleSearch = text => {
     setSearchQuery(text);

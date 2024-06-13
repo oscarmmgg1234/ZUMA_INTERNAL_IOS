@@ -185,7 +185,7 @@ export default function LABEL_MODAL(props: any) {
       }}>
       <View
         style={{
-          backgroundColor: index % 2 == 0 ? '#CFEDEE' : '#66A3A4',
+          backgroundColor: index % 2 == 0 ? '#CFEDEE' : '#A7BFC0',
           height: 60,
           width: '100%',
           flexDirection: 'row',
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 20,
-    backgroundColor: 'coral',
+    backgroundColor: '#76B947',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

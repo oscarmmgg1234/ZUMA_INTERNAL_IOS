@@ -435,7 +435,7 @@ export default function ACTIVATION_MODAL(props: any) {
       }}>
       <View
         style={{
-          backgroundColor: index % 2 == 0 ? '#CFEDEE' : '#66A3A4',
+          backgroundColor: index % 2 == 0 ? '#CFEDEE' : '#A7BFC0',
           height: 60,
           width: '100%',
           flexDirection: 'row',
@@ -696,7 +696,29 @@ export default function ACTIVATION_MODAL(props: any) {
                 justifyContent: 'space-around',
                 alignItems: 'center',
               }}>
-              <Text style={styles.sliderLabel}>Amount: {amount}</Text>
+              <View
+                style={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <Text style={styles.sliderLabel}>Amount: </Text>
+                <Text
+                  style={{
+                    fontSize: 30,
+                    borderStyle: 'solid',
+                    borderColor: '#89BE63',
+                    borderWidth: 2,
+                    padding: 10,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 20,
+                  }}>
+                  {amount}
+                </Text>
+              </View>
+
               <Slider
                 style={styles.slider}
                 minimumValue={1}
@@ -725,11 +747,34 @@ export default function ACTIVATION_MODAL(props: any) {
                 justifyContent: 'space-around',
                 alignItems: 'center',
               }}>
-              <Text style={styles.sliderLabel}>Cases: {multiplier}</Text>
+              <View
+                style={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <Text style={styles.sliderLabel}>Cases: </Text>
+                <Text
+                  style={{
+                    fontSize: 30,
+                    borderStyle: 'solid',
+                    borderColor: '#89BE63',
+                    borderWidth: 2,
+                    padding: 10,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 20,
+                  }}>
+                  {multiplier}
+                </Text>
+              </View>
+
               <Slider
                 style={styles.slider}
                 minimumValue={1}
                 maximumValue={30}
+                renderStepNumber={true}
                 tapToSeek={true}
                 step={1}
                 value={multiplier}
@@ -866,7 +911,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   activation_modal_submit: {
-    backgroundColor: 'coral',
+    backgroundColor: '#76B947',
     width: '40%',
     height: '90%',
     marginTop: '2%',
@@ -889,10 +934,10 @@ const styles = StyleSheet.create({
   },
   sliderLabel: {
     color: 'black',
-    fontSize: 30,
+    fontSize: 20,
   },
   slider: {
     width: '70%',
-    height: 40,
+    height: 50,
   },
 });
